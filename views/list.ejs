@@ -1,19 +1,26 @@
 <%- include("header") -%>
 
   <div class="box" id="heading">
-    <h1> <%= listTitle %> </h1>
+    <h1> <%= content.title %> </h1>
   </div>
 
   <div class="box">
-    <% for (let i=0; i<newListItems.length; i++) { %>
+    <% for (let i=0; i<content.list.length; i++) { %>
       <div class="item">
-        <input type="checkbox">
-        <p><%=  newListItems[i]  %></p>
+        <form action='/delete' method="post">
+            <input type="checkbox" value=<%=content.type%> name="datatype" onChange='this.form.submit()' >
+            <input type = "hidden" value=<%=content.idList[i]%> name="dataid">
+            <input type="hidden" name="user_id" value=<%=content.user_id%>>
+            <a href=<%= content.forwardLink %> ><%= content.list[i]  %></a>
+        </form>
+
       </div>
       <% } %>
 
-      <form class="item" action="/" method="post">
-        <input type="text" name="newItem" placeholder="New Item" autocomplete="off">
+      <form class="item" action='/create' method='post'>
+
+        <input type = 'hidden' name='user_id' value = <%=content.user_id %> >
+        <input type=<%= content.type %> name="newItem" size='10'>
         <button type="submit" name="list">+</button>
       </form>
   </div>

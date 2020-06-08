@@ -43,11 +43,14 @@ app.post("/", function(req, res){
   user.findOne({userEmail:userEmail},function(err,data){
     if(!err){
       if(!data){
-        user.insertMany([{userEmail:userEmail}],function(err,data){
+        user.insertMany([{userEmail:userEmail}],function(err,response){
           if(!err){
-            console.log("Inserted Successfully"+data.userEmail);
-            user_id = data._id;
-            res.redirect('/user/'+user_id);
+            if(response){
+              console.log("Inserted Successfully"+response[0].userEmail);
+              user_id = response[0]._id;
+              res.redirect('/user/'+user_id);
+            }
+
           }else{
             console.log("Error");
           }
@@ -99,6 +102,7 @@ app.get("/user/:user_id", function(req,res){
 });
 
 app.post('/create',function(req,res){
+  if(req.body.datatype==="date"){
   userDate.insertMany([{user_id:req.body.user_id,date:req.body.newItem}],function(err,data){
     if(!err){
       if(data){
@@ -110,6 +114,20 @@ app.post('/create',function(req,res){
       console.log("error");
     }
   });
+}
+else if(req.body.datatype==="item"){
+  item.insertMany([{user_id:req.body.user_id,date_id:req.body.date_id,item:req.body.newItem}],function(err,data){
+    if(!err){
+      if(data){
+        console.log(data);
+        res.redirect('/user/'+req.body.user_id+"/"+req.body.date_id);
+      }
+    }
+    else{
+      console.log("Error");
+    }
+  });
+}
 });
 
 app.post('/delete',function(req,res){
@@ -125,6 +143,46 @@ app.post('/delete',function(req,res){
       }
     });
   }
+  else if(req.body.datatype ==='item'){
+    item.deleteOne({_id:req.body.dataid},function(err,resposnse){
+      if(!err){
+        console.log("Data succesfully deleted Redirecting....");
+
+        res.redirect('user/'+req.body.user_id+'/'+req.body.date_id);
+
+      }
+      else{
+        console.log("error");
+      }
+    });
+  }
+});
+
+app.get('/user/:user_id/:date_id',function(req,res){
+  item.find({user_id:req.params.user_id,date_id:req.params.date_id},function(err,data){
+    if(!err){
+      listOfItem = [];
+      listOfId = [];
+
+      data.forEach(function(item){
+        listOfItem.push(item.item);
+        listOfId.push(item._id);
+
+      });
+      content = {
+        list : listOfItem,
+        idList: listOfId,
+        type:"item",
+        user_id:req.params.user_id,
+        date_id:req.params.date_id
+      }
+      res.render('toDoList',{content:content});
+      console.log("No Error");
+    }
+    else{
+      console.log("Error");
+    }
+  });
 });
 
 

@@ -1,13 +1,14 @@
 //jshint esversion:6
 
-exports.getDate = function() {
+exports.getDate = function(date) {
 
-  const today = new Date();
+  const today = new Date(date);
 
   const options = {
     weekday: "long",
     day: "numeric",
-    month: "long"
+    month: "long",
+    year:"numeric"
   };
 
   return today.toLocaleDateString("en-US", options);

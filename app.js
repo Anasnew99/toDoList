@@ -1,10 +1,9 @@
-//jshint esversion:6
 
 // Modules Required
-
+require("dotenv").config()
 const express = require("express");
 const bodyParser = require("body-parser");
-const date = require(__dirname + "/date.js");
+const std_date = require(__dirname + "/date.js");
 const mongoose = require('mongoose');
 const app = express();
 
@@ -15,7 +14,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
 // Databases Creation
-mongoose.connect('mongodb://localhost:27017/toDoListDb',{useNewUrlParser:true,useUnifiedTopology:true});
+mongoose.connect(process.env.MONGODB_URL,{useNewUrlParser:true,useUnifiedTopology:true});
 const itemsSchema = mongoose.Schema({
   user_id:String,
   date_id:String,
@@ -34,15 +33,20 @@ const user = mongoose.model("User",userSchema);
 // Route Handlers And App Logic
 
 /* Home Routes GET And POSt */
+
+//Index Page
 app.get("/", function(req, res) {
   res.render('index')
 });
+
+// Post route for finding user in database if not exist then creating one
+
 app.post("/", function(req, res){
   userEmail = req.body.userEmail;
   var user_id = 0;
   user.findOne({userEmail:userEmail},function(err,data){
     if(!err){
-      if(!data){
+      if(!data){ // Not exist
         user.insertMany([{userEmail:userEmail}],function(err,response){
           if(!err){
             if(response){
@@ -56,7 +60,7 @@ app.post("/", function(req, res){
           }
         });
       }
-      else{
+      else{// Existing users and redirecting to date list page.
         user_id=data._id;
         console.log(data._id);
         res.redirect('/user/'+user_id);
@@ -66,21 +70,21 @@ app.post("/", function(req, res){
       console.log("Error");
     }
   });
-      // Logging to that user's Route.
+
 
 });
 
 
-/* User's Route Handler */
+/* User's Data Route Handler */
 app.get("/user/:user_id", function(req,res){
-  //Checking User in Database.
+  //Finding the list of dates which users have created.
     userDate.find({user_id:req.params.user_id},function(err,data){
       if(!err){
         listOfDate = [];
         listOfId = [];
         forwardLink = [];
         data.forEach(function(date){
-          listOfDate.push(date.date);
+          listOfDate.push(std_date.getDate(date.date));
           listOfId.push(date._id);
           forwardLink.push("/user/"+req.params.user_id+"/"+date._id);
         });
@@ -100,6 +104,39 @@ app.get("/user/:user_id", function(req,res){
       }
     });
 });
+
+
+// User To Do List items for given requested date.
+
+app.get('/user/:user_id/:date_id',function(req,res){
+  item.find({user_id:req.params.user_id,date_id:req.params.date_id},function(err,data){
+    if(!err){
+      listOfItem = [];
+      listOfId = [];
+
+      data.forEach(function(item){
+        listOfItem.push(item.item);
+        listOfId.push(item._id);
+
+      });
+      content = {
+        list : listOfItem,
+        idList: listOfId,
+        type:"item",
+        user_id:req.params.user_id,
+        date_id:req.params.date_id
+      }
+      res.render('toDoList',{content:content});
+      console.log("No Error");
+    }
+    else{
+      console.log("Error");
+    }
+  });
+});
+
+
+// Post request to create an entry of new dates and new to do list item for a given user
 
 app.post('/create',function(req,res){
   if(req.body.datatype==="date"){
@@ -130,6 +167,8 @@ else if(req.body.datatype==="item"){
 }
 });
 
+// Post requset to delete a date for user or any to do list item
+
 app.post('/delete',function(req,res){
   if(req.body.datatype==='date'){
     userDate.deleteOne({_id:req.body.dataid},function(err,response){
@@ -158,34 +197,8 @@ app.post('/delete',function(req,res){
   }
 });
 
-app.get('/user/:user_id/:date_id',function(req,res){
-  item.find({user_id:req.params.user_id,date_id:req.params.date_id},function(err,data){
-    if(!err){
-      listOfItem = [];
-      listOfId = [];
+//  Listening to Port 3000
 
-      data.forEach(function(item){
-        listOfItem.push(item.item);
-        listOfId.push(item._id);
-
-      });
-      content = {
-        list : listOfItem,
-        idList: listOfId,
-        type:"item",
-        user_id:req.params.user_id,
-        date_id:req.params.date_id
-      }
-      res.render('toDoList',{content:content});
-      console.log("No Error");
-    }
-    else{
-      console.log("Error");
-    }
-  });
-});
-
-
-app.listen(3000, function() {
-  console.log("Server started on port 3000");
+app.listen(process.env.PORT||3000, function() {
+  console.log(" Server succesfully started ");
 });
